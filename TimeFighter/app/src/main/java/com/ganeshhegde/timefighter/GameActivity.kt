@@ -3,6 +3,7 @@ package com.ganeshhegde.timefighter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -15,11 +16,23 @@ class GameActivity : AppCompatActivity() {
     internal lateinit var tapMeButton : Button
     internal var score = 0
 
+
     internal var gameStarted = false //Boolean to indicate whether the game has started
     internal lateinit var countDownTimer: CountDownTimer //countdown object
     internal var initialCountDown: Long = 60000 //total time interval
     internal var countDownInterval: Long = 1000 //rate at which the countdown will decrement
     internal var timeLeft = 60 //To be displayed to user
+
+    companion object { //We create companion object that contains two String constants to track the variables you want to save when the orientation changes
+        private val SCORE_KEY = "SCORE_KEY"
+        private val TIME_LEFT_KEY = "TIME_LEFT_KEY"
+    }
+
+
+    //Name of the class assigned to the TAG variable
+    //The convention is to use the class name in log messages, which makes it easier to see what class message is coming from
+    internal val TAG = GameActivity::class.java.simpleName
+
 
     //2 onCreate -- It is the entrypoint to this activity. It starts with the keyword override meaning you will have to provide a custom implementation from the base AppCompatActivity class
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,8 +52,20 @@ class GameActivity : AppCompatActivity() {
         //setOnClickListener attaches a click listener to the Button which calls incrementScore method.
         tapMeButton.setOnClickListener {v -> incrementScore()}
 
+        Log.d(TAG,"onCreate called.Score is: $score")
+
+
         //reset the game
-        resetGame()
+
+        if(savedInstanceState == null){
+            resetGame()
+        }
+         else {
+            score = savedInstanceState.getInt(SCORE_KEY)
+            timeLeft = savedInstanceState.getInt(TIME_LEFT_KEY)
+            restoreGame()
+        }
+
     }
 
     private fun incrementScore(){//increment score logic
@@ -54,6 +79,30 @@ class GameActivity : AppCompatActivity() {
         val newScore = getString(R.string.your_score, score.toString())
         gameScoreTextView.text = newScore
 
+    }
+
+    private fun restoreGame(){
+        val restoredScore = getString(R.string.your_score,score.toString())
+        gameScoreTextView.text = restoredScore
+
+        val restoredTime = getString(R.string.time_left,timeLeft.toString())
+        timeLeftTextView.text= restoredTime
+
+        countDownTimer = object:CountDownTimer((timeLeft*1000).toLong(),countDownInterval){
+            override fun onFinish() {
+                endGame()
+            }
+
+            override fun onTick(millisUntilFinished: Long) {
+                timeLeft = millisUntilFinished.toInt() / 1000
+                val timeLeftString = getString(R.string.time_left,timeLeft.toString())
+                timeLeftTextView.text = timeLeftString
+            }
+
+        }
+
+        countDownTimer.start()
+        gameStarted = true
     }
 
     private fun resetGame() {//reset game logic
@@ -103,6 +152,22 @@ class GameActivity : AppCompatActivity() {
         //A toast is a small alert that pops up briefly to inform you of some event that's occured - in this case, the end of the game
         Toast.makeText(this,getString(R.string.game_over_message,score.toString()),Toast.LENGTH_LONG).show()
         resetGame()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        //bundle is a dictionary which android uses to pass values across different screens.
+        outState.putInt(SCORE_KEY,score)
+        outState.putInt(TIME_LEFT_KEY,timeLeft)
+        countDownTimer.cancel()
+
+        Log.d(TAG,"onSaveInstanceState:Saving score :$score and Time left: $timeLeft")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy() //call super implementation so your Activity can perform any essential cleanup
+        Log.d(TAG,"onDestroy callec")
     }
 
 }
