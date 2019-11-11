@@ -167,7 +167,7 @@ class GameActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy() //call super implementation so your Activity can perform any essential cleanup
-        Log.d(TAG,"onDestroy callec")
+        Log.d(TAG,"onDestroy called")
     }
 
 }
