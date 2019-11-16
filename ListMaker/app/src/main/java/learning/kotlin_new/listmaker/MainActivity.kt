@@ -1,18 +1,30 @@
 package learning.kotlin_new.listmaker
 
+import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
+import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.EditText
+
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),ListSelectionRecyclerViewAdapter.ListSelectionRecyclerViewClickListener {
+    override fun listItemClicked(list: TaskList) {
+        showListDetail(list)
+    }
 
+    val listDataManager:ListDataManager = ListDataManager(this)
     lateinit var listsRecyclerView: RecyclerView
+
+    companion object {
+        val INTENT_LIST_KEY = "list"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,19 +32,18 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+            showCreateListDialog()
         }
 
         //1 set the listsRecyclerView by referencing the ID of the Recyclerview setup in the layout
+        val lists = listDataManager.readLists()
         listsRecyclerView = findViewById(R.id.lists_recyclerview)
 
         //2 The Recyclerview will use the linear layout to present the items in our case. GridLayoutManager and
         //StaggeredGridLayoutManager are the other varieties available
         listsRecyclerView.layoutManager = LinearLayoutManager(this)
 
-
-        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter()
+        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists,this)
 
 
     }
@@ -51,5 +62,41 @@ class MainActivity : AppCompatActivity() {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showCreateListDialog() {
+        //1
+        val dialogTitle = getString(R.string.name_of_list)
+        val positiveButtonTitle = getString(R.string.create_list)
+
+        //2
+        val builder = AlertDialog.Builder(this)
+        val listTitleEditText = EditText(this)
+        listTitleEditText.inputType = InputType.TYPE_CLASS_TEXT
+
+        builder.setTitle(dialogTitle)
+        builder.setView(listTitleEditText)
+
+        //3
+        builder.setPositiveButton(positiveButtonTitle) { dialog, i ->
+            val list = TaskList(listTitleEditText.text.toString())
+            listDataManager.saveList(list)
+
+            val recyclerViewAdapter = listsRecyclerView.adapter as ListSelectionRecyclerViewAdapter
+            recyclerViewAdapter.addList(list)
+            dialog.dismiss()
+            showListDetail(list)
+        }
+        //4
+        builder.create().show()
+   }
+
+    private fun showListDetail(list:TaskList){
+        //1
+        val listDetailIntent = Intent(this,ListDetailActivity::class.java)
+        //2
+        listDetailIntent.putExtra(INTENT_LIST_KEY,list)
+        //3
+        startActivity(listDetailIntent)
     }
 }
