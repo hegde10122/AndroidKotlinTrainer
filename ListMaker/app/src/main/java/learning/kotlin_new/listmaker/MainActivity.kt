@@ -8,22 +8,26 @@ import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
-
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import android.widget.FrameLayout
 
 import kotlinx.android.synthetic.main.activity_main.*
+import learning.kotlin_new.listmaker.dummy.DummyContent
 
-class MainActivity : AppCompatActivity(),ListSelectionRecyclerViewAdapter.ListSelectionRecyclerViewClickListener {
-    override fun listItemClicked(list: TaskList) {
+class MainActivity : AppCompatActivity(),ListSelectionFragment.OnListFragmentInteractionListener {
+    override fun onListFragmentInteraction(item: DummyContent.DummyItem) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    private var listSelectionFragment:ListSelectionFragment = ListSelectionFragment.newInstance()
+    private var fragmentContainer : FrameLayout? = null
+
+    fun onListItemClicked(list: TaskList) {
         showListDetail(list)
     }
 
-    val listDataManager:ListDataManager = ListDataManager(this)
-    lateinit var listsRecyclerView: RecyclerView
-
     companion object {
         val INTENT_LIST_KEY = "list"
+        val LIST_DETAIL_REQUEST_CODE = 123
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,20 +35,12 @@ class MainActivity : AppCompatActivity(),ListSelectionRecyclerViewAdapter.ListSe
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+        fragmentContainer = findViewById(R.id.fragment_container)
+        supportFragmentManager.beginTransaction().add(R.id.fragment_container,listSelectionFragment).commit()
+
         fab.setOnClickListener { view ->
             showCreateListDialog()
         }
-
-        //1 set the listsRecyclerView by referencing the ID of the Recyclerview setup in the layout
-        val lists = listDataManager.readLists()
-        listsRecyclerView = findViewById(R.id.lists_recyclerview)
-
-        //2 The Recyclerview will use the linear layout to present the items in our case. GridLayoutManager and
-        //StaggeredGridLayoutManager are the other varieties available
-        listsRecyclerView.layoutManager = LinearLayoutManager(this)
-
-        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists,this)
-
 
     }
 
@@ -80,10 +76,9 @@ class MainActivity : AppCompatActivity(),ListSelectionRecyclerViewAdapter.ListSe
         //3
         builder.setPositiveButton(positiveButtonTitle) { dialog, i ->
             val list = TaskList(listTitleEditText.text.toString())
-            listDataManager.saveList(list)
+            listSelectionFragment.addList(list)
 
-            val recyclerViewAdapter = listsRecyclerView.adapter as ListSelectionRecyclerViewAdapter
-            recyclerViewAdapter.addList(list)
+
             dialog.dismiss()
             showListDetail(list)
         }
@@ -97,6 +92,21 @@ class MainActivity : AppCompatActivity(),ListSelectionRecyclerViewAdapter.ListSe
         //2
         listDetailIntent.putExtra(INTENT_LIST_KEY,list)
         //3
-        startActivity(listDetailIntent)
+        startActivityForResult(listDetailIntent,LIST_DETAIL_REQUEST_CODE)
     }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        //1
+        if(requestCode == LIST_DETAIL_REQUEST_CODE)
+        {
+            //2
+            data?.let{
+                //3
+                listSelectionFragment.saveList(data.getParcelableExtra<TaskList>(INTENT_LIST_KEY))
+            }
+        }
+    }
+
 }

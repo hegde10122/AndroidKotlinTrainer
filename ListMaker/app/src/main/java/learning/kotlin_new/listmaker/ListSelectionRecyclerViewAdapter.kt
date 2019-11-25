@@ -5,7 +5,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
 class ListSelectionRecyclerViewAdapter(private val lists: ArrayList<TaskList>,
-                                       val clickListener : ListSelectionRecyclerViewClickListener) :
+                                       val clickListener: ListSelectionFragment
+) :
     RecyclerView.Adapter<ListSelectionViewHolder>() {
 
     override fun onBindViewHolder(holder: ListSelectionViewHolder, position: Int) {
